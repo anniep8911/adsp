@@ -1,0 +1,32 @@
+{
+  "name": "jsp-tab4-formatter",
+  "displayName": "JSP TAB4 Formatter",
+  "description": "JSP/HTML formatter using TAB indentation",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:jsp"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "jspTab4Formatter.format",
+        "title": "Format JSP with TAB4"
+      }
+    ],
+    "configurationDefaults": {
+      "[html]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+      },
+      "[jsp]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": false
+      }
+    }
+  }
+}

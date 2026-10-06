@@ -1,7 +1,11 @@
-const data = [
+let data = [
+    {
+        mainkey :'데이터개념',
+        cat:['데이터'],
+    },
     {
         mainkey :'DIKW피라미드',
-        cat:['데이터','데이터개념','DIKW'],
+        cat:['데이터','데이터개념'],
     },
     {
         mainkey :'Data',
@@ -26,6 +30,10 @@ const data = [
         sub: '근본 원리를 이해한뒤 나오는판단',
         eg : 'A마트가 다른 물건도 쌀 것이다',
         cat:['데이터','데이터개념','DIKW','Wisdom'],
+    },
+    {
+        mainkey :'데이터표현',
+        cat:['데이터'],
     },
     {
         mainkey :'데이터표현단위',
@@ -70,6 +78,10 @@ const data = [
         mainkey :'EB',
         sub:'1024PB',
         cat:['데이터','데이터표현','데이터표현단위'],
+    },
+    {
+        mainkey :'지식',
+        cat:['데이터','데이터개념','지식'],
     },
     {
         mainkey :'암묵지',
@@ -159,6 +171,10 @@ const data = [
     {
         mainkey :'데이터 처리',
         cat:['데이터','데이터베이스'],
+    },
+    {
+        mainkey :'과정',
+        cat:['데이터','데이터베이스','데이터처리'],
     },
     {
         mainkey :'1. Extract',
@@ -388,5 +404,8 @@ const data = [
         mainkey :'소셜네트워크분석',
         cat:['데이터','빅데이터','분석','데이터 마이닝'],
     },
-    
+    {
+        mainkey :'DIKW피라미드',
+        cat:['데이터','데이터개념','DIKW'],
+    },
 ]

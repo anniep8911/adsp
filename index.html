@@ -1,13 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ADSP 준비</title>
     <link rel="stylesheet" href="./css/reset.css">
-    <script src="./js/data.js"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>adsp준비</h1>
+    <div class="note"></div>
+    <script src="./js/data.js"></script>
+    <script>
+        let all =[];
+        let cat1  = new Set();
+        const inner =  document.querySelector('.note');
+
+        for(const d in data){
+            all.push(data[d].cat);
+        }
+
+        let result = [
+            ...new Map(
+                all.map(i => [JSON.stringify(i),i])
+            ).values()
+        ];
+
+        // console.log(result);
+
+
+       const maxLength = Math.max(...all.map(v => v.length));
+
+        result.sort((a, b) => {
+            const aKey = a.join('|');
+            const bKey = b.join('|');
+            
+            return aKey.localeCompare(bKey);
+        });
+
+
+        function depth (now,prevDepth){
+            const divs =  document.querySelectorAll(prevDepth);
+            let result= false;
+            let data =  now.join('');
+            
+            divs.forEach(e=>{
+                e.querySelector('span').textContent.replaceAll(',','') === data ? result = e.getAttribute('id') : ''; 
+            });
+            
+            return result;
+        };
+
+
+        result.forEach((e,i)=>{
+            const div = document.createElement('div');
+            div.classList.add(`sort`);
+            div.classList.add(`sort${i}`);
+            div.setAttribute('data-depth',e.length);
+
+            switch(e.length){
+                case 1 : {
+                    const div = document.createElement('div');
+                    div.classList.add(`sort`);
+                    div.innerText = e;
+                    div.classList.add(`depth${e.length}`);
+                    div.setAttribute('id',`sort${i}`);
+                     div.setAttribute('depth',`${e.length}`);
+
+                    inner.append(div);
+                };
+                break;
+                case 2 : {
+                    const divs =  document.querySelectorAll('.sort');
+                    const div = document.createElement('div');
+                    const textWrap = document.createElement('span');
+                    div.classList.add(`sort`);
+                    textWrap.textContent = e;
+                    div.append(textWrap);
+                    div.classList.add(`depth${e.length}`);
+                    div.setAttribute('depth',`${e.length}`);
+                    div.setAttribute('id',`sort${i}`);
+                    divs[0].append(div);
+                };
+                break;
+                case 3 : {
+                    const div = document.createElement('div');
+                    const ids =  depth(e.slice(0,2), '.depth2');
+                    const preDom =  document.querySelector(`#${ids}`);
+                    const textWrap = document.createElement('span');
+                    div.classList.add(`sort`);
+                    textWrap.textContent = e;
+                    div.append(textWrap);
+                    
+                    div.setAttribute('depth',`${e.length}`);
+                    div.classList.add(`depth${e.length}`);
+                    div.setAttribute('id',`sort${i}`);
+                    preDom.append(div);
+                };
+                break;
+                case 4 : {
+                    const div = document.createElement('div');
+                    const ids =  depth(e.slice(0,3), '.depth3');
+                    const preDom =  document.querySelector(`#${ids}`);
+                    const textWrap = document.createElement('span');
+                    div.classList.add(`sort`);
+                    textWrap.textContent = e;
+                     div.setAttribute('depth',`${e.length}`);
+                    div.append(textWrap);
+                    div.classList.add(`depth${e.length}`);
+                    div.setAttribute('id',`sort${i}`);
+                    preDom.append(div);
+                };
+                break;
+                case 5: {
+                    const div = document.createElement('div');
+                    const ids =  depth(e.slice(0,4), '.depth4');
+                    const preDom =  document.querySelector(`#${ids}`);
+                    const textWrap = document.createElement('span');
+                    div.classList.add(`sort`);
+                    textWrap.textContent = e;
+                    div.append(textWrap);
+                     div.setAttribute('depth',`${e.length}`);
+                    div.classList.add(`depth${e.length}`);
+                    div.setAttribute('id',`sort${i}`);
+                    preDom.append(div);
+                };
+                break;
+                case 6: {
+                    const div = document.createElement('div');
+                    const ids =  depth(e.slice(0,5), '.depth5');
+                    const preDom =  document.querySelector(`#${ids}`);
+                    const textWrap = document.createElement('span');
+                    div.classList.add(`sort`);
+                     div.setAttribute('depth',`${e.length}`);
+                    textWrap.textContent = e;
+                    div.append(textWrap);
+                    div.classList.add(`depth${e.length}`);
+                    div.setAttribute('id',`sort${i}`);
+                    preDom.append(div);
+                };
+                break;
+
+            };
+        });
+
+
+        const allTags =  document.querySelectorAll('.sort span');
+
+        function findTags(cat){
+            let result;
+            allTags.forEach(all=>{
+                all.textContent.replaceAll(',','') === cat.join('')? result = all : '';
+            });
+            return result;
+
+        }
+
+        findTags(['데이터','데이터개념']);
+
+        for(const dt in data){
+            // console.log(data[dt]);
+
+        }
+
+
+        // function findIdx(data){
+        //     let idx = 10;
+        //     result.forEach((e,i)=>{
+        //         (JSON.stringify(e)===JSON.stringify(data)) ? idx= i:'';
+        //     })
+        //     console.log(`반환인덱스:${idx} || 들어온값: ${data}`);
+        //     return idx;
+        // }
+
+        // console.log(result)
+
+
+        // for(const d in data){
+        //     let p =  document.createElement('li');
+        //     let catIdx =findIdx(data[d].cat); 
+        //     p.innerText = data[d].mainkey;
+        //     const sorts =  document.querySelectorAll('.sort');
+        //     sorts[catIdx].append(p);
+        // }
+    </script>
 </body>
 </html>
