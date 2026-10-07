@@ -1,194 +1,707 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ADSP 준비</title>
     <link rel="stylesheet" href="./css/reset.css">
     <style>
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --muted: #9aa0a6;
+            --eg: #7ab8d8;
+            --line: #2a2a2a;
+            --accent: #3b82f6;
+            --panel: #141414;
+
+            /* depth별 색상 */
+            --c1: #60a5fa;
+            --c2: #34d399;
+            --c3: #fbbf24;
+            --c4: #f472b6;
+            --c5: #a78bfa;
+            --c6: #fb923c;
+
+            /* 검색 표시 색상 */
+            --anc-bg: rgba(96, 165, 250, .16);
+            --hit-bg: rgba(250, 204, 21, .30);
+            --mark-bg: #facc15;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
-            background-color: #000;
+            background-color: var(--bg);
+            color: var(--fg);
+            font-size: 16px;
+            line-height: 1.5;
+            word-break: keep-all;
+            overflow-wrap: anywhere;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* ---------- 상단 툴바 ---------- */
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            padding-top: calc(8px + env(safe-area-inset-top, 0px));
+            background: rgba(0, 0, 0, .94);
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .toolbar button {
+            flex: 0 0 auto;
+            min-height: 40px;
+            padding: 0 14px;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: var(--panel);
+            color: var(--fg);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .toolbar button:active {
+            background: var(--accent);
+        }
+
+        .toolbar .group {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            max-width: 100%;
+            scrollbar-width: none;
+        }
+
+        .toolbar .group::-webkit-scrollbar {
+            display: none;
+        }
+
+        .toolbar .label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* 검색창 */
+        .search {
+            position: relative;
+            flex: 1 1 100%;
+        }
+
+        .search input {
+            width: 100%;
+            height: 42px;
+            padding: 0 40px 0 14px;
+            border: 1px solid var(--line);
+            border-radius: 21px;
+            background: var(--panel);
+            color: var(--fg);
+            font-size: 16px;   /* iOS 확대 방지 */
+            outline: none;
+        }
+
+        .search input:focus {
+            border-color: var(--accent);
+        }
+
+        .search .clear {
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+            width: 34px;
+            min-height: 34px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--muted);
+            font-size: 18px;
+            display: none;
+        }
+
+        .search.has-text .clear {
+            display: block;
+        }
+
+        .legend {
+            flex: 1 1 100%;
+            display: none;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        body.searching .legend {
+            display: flex;
+        }
+
+        .legend i {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 4px;
+            border-radius: 3px;
+            vertical-align: -1px;
+        }
+
+        .legend .l-hit i {
+            background: var(--hit-bg);
+            outline: 1px solid var(--mark-bg);
+        }
+
+        .legend .l-anc i {
+            background: var(--anc-bg);
+            outline: 1px solid var(--c1);
+        }
+
+        /* ---------- 트리 ---------- */
+        .note {
+            padding: 8px 10px 40px;
+        }
+
+        .empty {
+            display: none;
+            padding: 30px 10px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        body.no-result .empty {
+            display: block;
+        }
+
+        .sort {
+            --c: var(--c1);
+            margin-left: 12px;
+            border-left: 2px solid var(--c);
+        }
+
+        .sort.depth1 { --c: var(--c1); }
+        .sort.depth2 { --c: var(--c2); }
+        .sort.depth3 { --c: var(--c3); }
+        .sort.depth4 { --c: var(--c4); }
+        .sort.depth5 { --c: var(--c5); }
+        .sort.depth6 { --c: var(--c6); }
+
+        .sort.depth1 {
+            margin-left: 0;
+            margin-top: 6px;
+        }
+
+        .sort > .head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 6px 8px;
+            color: var(--c);
+            cursor: pointer;
+            user-select: none;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .sort.depth1 > .head {
+            font-size: 19px;
+            font-weight: 700;
+            background: color-mix(in srgb, var(--c) 12%, transparent);
+        }
+
+        .sort.depth2 > .head {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .sort.leaf > .head {
+            cursor: default;
+        }
+
+        /* 화살표 */
+        .sort > .head::before {
+            content: "";
+            flex: 0 0 auto;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid var(--c);
+            border-bottom: 2px solid var(--c);
+            transform: rotate(-45deg);
+            transition: transform .15s;
+        }
+
+        .sort.open > .head::before {
+            transform: rotate(45deg);
+        }
+
+        .sort.leaf > .head::before {
+            width: 5px;
+            height: 5px;
+            border: 0;
+            border-radius: 50%;
+            background: var(--c);
+            transform: none;
+            opacity: .6;
+        }
+
+        /* 이름 + 설명(sub) : 같은 줄에 이어서 표시 */
+        .head > .txt {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .head .name {
+            font: inherit;
+        }
+
+        .head .sub {
+            margin-left: 8px;
+            font-size: 13px;
+            font-weight: 400;
+            color: #d0d4d9;
+        }
+
+        /* 예시 버튼 */
+        .egbtn {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 30px;
+            padding: 0 10px;
+            border: 1px solid var(--eg);
+            border-radius: 15px;
+            background: transparent;
+            color: var(--eg);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .egbtn::after {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-right: 1.5px solid currentColor;
+            border-bottom: 1.5px solid currentColor;
+            transform: rotate(45deg) translateY(-1px);
+            transition: transform .2s;
+        }
+
+        .sort.eg-open > .head .egbtn {
+            background: var(--eg);
+            color: #000;
+        }
+
+        .sort.eg-open > .head .egbtn::after {
+            transform: rotate(-135deg) translateY(-1px);
+        }
+
+        /* 예시 아코디언 */
+        .egbox {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows .22s ease;
+        }
+
+        .sort.eg-open > .egbox {
+            grid-template-rows: 1fr;
+        }
+
+        .egbox > .eginner {
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .egbox .egtext {
+            margin: 2px 8px 8px 28px;
+            padding: 8px 10px;
+            border-left: 3px solid var(--eg);
+            border-radius: 0 8px 8px 0;
+            background: rgba(122, 184, 216, .10);
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--eg);
+        }
+
+        /* 닫힘 / 열림 */
+        .sort:not(.open) > .body {
+            display: none;
+        }
+
+        /* ---------- 검색 상태 ---------- */
+        .sort.hide {
+            display: none;
+        }
+
+        /* 상위(조상) 항목: 배경으로 표시 */
+        .sort.anc > .head {
+            background: var(--anc-bg);
+        }
+
+        /* 검색에 걸린 항목 */
+        .sort.hit > .head {
+            background: var(--hit-bg);
             color: #fff;
+            box-shadow: inset 3px 0 0 var(--mark-bg);
+        }
+
+        mark {
+            background: var(--mark-bg);
+            color: #000;
+            border-radius: 3px;
+            padding: 0 1px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                max-width: 720px;
+                margin: 0 auto;
+            }
         }
     </style>
 </head>
 
 <body>
+    <div class="toolbar">
+        <div class="search" id="searchBox">
+            <input type="search" id="q" placeholder="검색 (이름 / 설명 / 예시)" autocomplete="off">
+            <button type="button" class="clear" id="clearQ" aria-label="검색어 지우기">✕</button>
+        </div>
+        <div class="legend">
+            <span class="l-hit"><i></i>검색 결과</span>
+            <span class="l-anc"><i></i>상위 항목</span>
+        </div>
+        <button type="button" id="openAll">전체 열기</button>
+        <button type="button" id="closeAll">전체 닫기</button>
+        <span class="label">단계</span>
+        <div class="group" id="levels"></div>
+    </div>
+
     <div class="note"></div>
+    <div class="empty">검색 결과가 없습니다</div>
+
     <script src="./js/data.js"></script>
     <script>
-        let all =[];
-        let cat1  = new Set();
-        const inner =  document.querySelector('.note');
+        const root = document.querySelector('.note');
+        const nodes = new Map();   // 정규화된 경로 → node
+        let seq = 0;
 
-        for(const d in data){
-            all.push(data[d].cat);
+        // 띄어쓰기 차이('데이터 저장소' / '데이터저장소')를 같은 이름으로 취급
+        const norm = s => String(s).replace(/\s+/g, '');
+        const keyOf = path => path.map(norm).join('\u0001');
+
+        // el 안에 text를 넣되, q와 일치하는 부분은 <mark>로 감싼다
+        function fillText(el, text, q) {
+            el.textContent = '';
+            const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
+            if (i < 0) {
+                el.textContent = text;
+                return;
+            }
+            const mark = document.createElement('mark');
+            mark.textContent = text.slice(i, i + q.length);
+            el.append(
+                document.createTextNode(text.slice(0, i)),
+                mark,
+                document.createTextNode(text.slice(i + q.length))
+            );
         }
 
-        let result = [
-            ...new Map(
-                all.map(i => [JSON.stringify(i),i])
-            ).values()
-        ];
+        // 머리줄(이름 + 설명) / 예시 내용을 다시 그린다
+        function renderNode(n, q) {
+            fillText(n.nameEl, n.label, q);
+            if (n.subEl) fillText(n.subEl, n.sub, q);
+            if (n.egText) fillText(n.egText, n.eg, q);
+        }
 
-        // console.log(result);
+        function setEg(n, open) {
+            if (!n.egBtn) return;
+            n.box.classList.toggle('eg-open', open);
+            n.egBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
 
+        // path에 해당하는 박스를 돌려준다. 없으면 부모(조상)부터 재귀적으로 만든다.
+        function getNode(path, item) {
+            const key = keyOf(path);
+            let node = nodes.get(key);
 
-       const maxLength = Math.max(...all.map(v => v.length));
+            if (!node) {
+                const parent = path.length > 1 ? getNode(path.slice(0, -1)) : null;
 
-        result.sort((a, b) => {
-            const aKey = a.join('|');
-            const bKey = b.join('|');
-            
-            return aKey.localeCompare(bKey);
+                const box = document.createElement('div');
+                box.classList.add('sort', `depth${path.length}`);
+                box.setAttribute('cat', path);
+                box.setAttribute('depth', path.length);
+                box.setAttribute('id', `sort${seq++}`);
+
+                const head = document.createElement('div');
+                head.classList.add('head');
+                head.setAttribute('role', 'button');
+                head.setAttribute('tabindex', '0');
+
+                const txt = document.createElement('div');
+                txt.classList.add('txt');
+                const nameEl = document.createElement('span');
+                nameEl.classList.add('name');
+                txt.append(nameEl);
+                head.append(txt);
+
+                const body = document.createElement('div');
+                body.classList.add('body');
+
+                box.append(head, body);
+                (parent ? parent.body : root).append(box);
+
+                node = {
+                    box, head, txt, body, parent, nameEl,
+                    subEl: null, egBtn: null, egText: null,
+                    depth: path.length,
+                    label: path[path.length - 1],
+                    sub: '', eg: ''
+                };
+                nodes.set(key, node);
+            }
+
+            // data.js에 직접 정의된 항목이면 이름 / 설명 / 예시를 채운다
+            if (item) {
+                node.label = item.mainkey;
+
+                // 설명(sub): 이름 바로 옆에 이어 붙인다
+                if (item.sub && !node.sub) {
+                    node.sub = item.sub;
+                    node.subEl = document.createElement('span');
+                    node.subEl.classList.add('sub');
+                    node.txt.append(node.subEl);
+                }
+
+                // 예시(eg): 버튼 + 아코디언
+                if (item.eg && !node.eg) {
+                    node.eg = item.eg;
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.classList.add('egbtn');
+                    btn.textContent = '예시';
+                    btn.setAttribute('aria-expanded', 'false');
+                    node.head.append(btn);
+                    node.egBtn = btn;
+
+                    const egbox = document.createElement('div');
+                    egbox.classList.add('egbox');
+                    const inner = document.createElement('div');
+                    inner.classList.add('eginner');
+                    const text = document.createElement('div');
+                    text.classList.add('egtext');
+                    inner.append(text);
+                    egbox.append(inner);
+                    node.head.after(egbox);
+                    node.egText = text;
+                }
+
+                renderNode(node, '');
+            } else if (!node.nameEl.textContent) {
+                renderNode(node, '');
+            }
+
+            return node;
+        }
+
+        // 항목 하나의 경로 계산
+        //  - cat 의 마지막 이름이 mainkey 와 같으면 cat 자체가 이 항목의 경로
+        //  - 다르면 cat 아래에 mainkey 가 놓인다
+        function pathOf(d) {
+            const last = d.cat[d.cat.length - 1];
+            return last !== undefined && norm(last) === norm(d.mainkey)
+                ? d.cat
+                : [...d.cat, d.mainkey];
+        }
+
+        for (const d of data) {
+            getNode(pathOf(d), d);
+        }
+
+        /* ------------------------------------------------------------ */
+        /* 토글                                                          */
+        /* ------------------------------------------------------------ */
+        let maxDepth = 1;
+
+        nodes.forEach(n => {
+            maxDepth = Math.max(maxDepth, n.depth);
+            // 자식 박스가 없으면 열고 닫을 하위 항목이 없다
+            const hasChild = n.body.querySelector(':scope > .sort') !== null;
+            if (!hasChild) n.box.classList.add('leaf');
         });
 
+        function toggle(n) {
+            if (n.box.classList.contains('leaf')) return;
+            n.box.classList.toggle('open');
+        }
 
-        function depth (now,prevDepth){
-            const divs =  document.querySelectorAll(prevDepth);
-            let result= false;
-            let data =  now.join('');
-            
-            divs.forEach(e=>{
-                e.querySelector('span').textContent.replaceAll(',','') === data ? result = e.getAttribute('id') : ''; 
+        nodes.forEach(n => {
+            n.head.addEventListener('click', () => toggle(n));
+            n.head.addEventListener('keydown', e => {
+                if (e.target !== n.head) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggle(n);
+                }
             });
-            
-            return result;
-        };
-
-
-        result.forEach((e,i)=>{
-            const div = document.createElement('div');
-            div.classList.add(`sort`);
-            div.classList.add(`sort${i}`);
-            div.setAttribute('data-depth',e.length);
-
-            switch(e.length){
-                case 1 : {
-                    const div = document.createElement('div');
-                    div.classList.add(`sort`);
-                    div.innerText = e;
-                    div.classList.add(`depth${e.length}`);
-                    div.setAttribute('id',`sort${i}`);
-                     div.setAttribute('depth',`${e.length}`);
-
-                    inner.append(div);
-                };
-                break;
-                case 2 : {
-                    const divs =  document.querySelectorAll('.sort');
-                    const div = document.createElement('div');
-                    const textWrap = document.createElement('span');
-                    div.classList.add(`sort`);
-                    textWrap.textContent = e;
-                    div.append(textWrap);
-                    div.classList.add(`depth${e.length}`);
-                    div.setAttribute('depth',`${e.length}`);
-                    div.setAttribute('id',`sort${i}`);
-                    divs[0].append(div);
-                };
-                break;
-                case 3 : {
-                    const div = document.createElement('div');
-                    const ids =  depth(e.slice(0,2), '.depth2');
-                    const preDom =  document.querySelector(`#${ids}`);
-                    const textWrap = document.createElement('span');
-                    div.classList.add(`sort`);
-                    textWrap.textContent = e;
-                    div.append(textWrap);
-                    
-                    div.setAttribute('depth',`${e.length}`);
-                    div.classList.add(`depth${e.length}`);
-                    div.setAttribute('id',`sort${i}`);
-                    preDom.append(div);
-                };
-                break;
-                case 4 : {
-                    const div = document.createElement('div');
-                    const ids =  depth(e.slice(0,3), '.depth3');
-                    const preDom =  document.querySelector(`#${ids}`);
-                    const textWrap = document.createElement('span');
-                    div.classList.add(`sort`);
-                    textWrap.textContent = e;
-                     div.setAttribute('depth',`${e.length}`);
-                    div.append(textWrap);
-                    div.classList.add(`depth${e.length}`);
-                    div.setAttribute('id',`sort${i}`);
-                    preDom.append(div);
-                };
-                break;
-                case 5: {
-                    const div = document.createElement('div');
-                    const ids =  depth(e.slice(0,4), '.depth4');
-                    const preDom =  document.querySelector(`#${ids}`);
-                    const textWrap = document.createElement('span');
-                    div.classList.add(`sort`);
-                    textWrap.textContent = e;
-                    div.append(textWrap);
-                     div.setAttribute('depth',`${e.length}`);
-                    div.classList.add(`depth${e.length}`);
-                    div.setAttribute('id',`sort${i}`);
-                    preDom.append(div);
-                };
-                break;
-                case 6: {
-                    const div = document.createElement('div');
-                    const ids =  depth(e.slice(0,5), '.depth5');
-                    const preDom =  document.querySelector(`#${ids}`);
-                    const textWrap = document.createElement('span');
-                    div.classList.add(`sort`);
-                     div.setAttribute('depth',`${e.length}`);
-                    textWrap.textContent = e;
-                    div.append(textWrap);
-                    div.classList.add(`depth${e.length}`);
-                    div.setAttribute('id',`sort${i}`);
-                    preDom.append(div);
-                };
-                break;
-
-            };
+            if (n.egBtn) {
+                n.egBtn.addEventListener('click', e => {
+                    e.stopPropagation();   // 하위 항목 토글과 분리
+                    setEg(n, !n.box.classList.contains('eg-open'));
+                });
+            }
         });
 
-
-        const allTags =  document.querySelectorAll('.sort span');
-
-        function findTags(cat){
-            let result;
-            allTags.forEach(all=>{
-                all.textContent.replaceAll(',','') === cat.join('')? result = all : '';
+        // 전체 열기 / 닫기 (예시 아코디언 포함)
+        function setAll(open) {
+            nodes.forEach(n => {
+                if (!n.box.classList.contains('leaf')) n.box.classList.toggle('open', open);
+                setEg(n, open);
             });
-            return result;
-
         }
 
-        findTags(['데이터','데이터개념']);
-
-        for(const dt in data){
-            // console.log(data[dt]);
-
+        // N단계까지 보이게: depth < N 인 박스는 열고, 나머지는 닫는다
+        function showLevel(level) {
+            nodes.forEach(n => {
+                if (n.box.classList.contains('leaf')) return;
+                n.box.classList.toggle('open', n.depth < level);
+            });
         }
 
+        /* ------------------------------------------------------------ */
+        /* 검색                                                          */
+        /*  - 이름 / 설명 / 예시에서 검색 (대소문자, 띄어쓰기 무시)          */
+        /*  - 결과 항목(.hit) : 노란 배경 + 글자 하이라이트                  */
+        /*  - 상위 항목(.anc) : 파란 배경, 자동으로 열림                    */
+        /*  - 예시에서 일치하면 해당 예시 아코디언도 자동으로 열림           */
+        /*  - 그 외 항목은 숨김. 검색어를 지우면 이전 상태로 복원            */
+        /* ------------------------------------------------------------ */
+        const qInput = document.getElementById('q');
+        const searchBox = document.getElementById('searchBox');
+        let saved = null;
 
-        // function findIdx(data){
-        //     let idx = 10;
-        //     result.forEach((e,i)=>{
-        //         (JSON.stringify(e)===JSON.stringify(data)) ? idx= i:'';
-        //     })
-        //     console.log(`반환인덱스:${idx} || 들어온값: ${data}`);
-        //     return idx;
-        // }
+        function clearSearchState() {
+            nodes.forEach(n => {
+                n.box.classList.remove('hit', 'anc', 'hide');
+                renderNode(n, '');
+            });
+            document.body.classList.remove('searching', 'no-result');
+            if (saved) {
+                nodes.forEach((n, k) => {
+                    const s = saved.get(k);
+                    if (!n.box.classList.contains('leaf')) n.box.classList.toggle('open', s.open);
+                    setEg(n, s.eg);
+                });
+                saved = null;
+            }
+        }
 
-        // console.log(result)
+        function applySearch() {
+            const raw = qInput.value.trim();
+            searchBox.classList.toggle('has-text', qInput.value !== '');
 
+            if (!raw) {
+                clearSearchState();
+                return;
+            }
 
-        // for(const d in data){
-        //     let p =  document.createElement('li');
-        //     let catIdx =findIdx(data[d].cat); 
-        //     p.innerText = data[d].mainkey;
-        //     const sorts =  document.querySelectorAll('.sort');
-        //     sorts[catIdx].append(p);
-        // }
+            // 검색 시작 시점의 열림 상태를 저장
+            if (!saved) {
+                saved = new Map();
+                nodes.forEach((n, k) => saved.set(k, {
+                    open: n.box.classList.contains('open'),
+                    eg: n.box.classList.contains('eg-open')
+                }));
+            }
+
+            const nq = norm(raw).toLowerCase();
+            const hits = new Set();
+            const ancs = new Set();
+
+            nodes.forEach(n => {
+                const text = norm(n.label + n.sub + n.eg).toLowerCase();
+                if (text.indexOf(nq) >= 0) {
+                    hits.add(n);
+                    for (let p = n.parent; p; p = p.parent) ancs.add(p);
+                }
+            });
+
+            nodes.forEach(n => {
+                // 결과 항목의 자손도 보이게 둔다
+                let underHit = false;
+                for (let p = n.parent; p; p = p.parent) {
+                    if (hits.has(p)) { underHit = true; break; }
+                }
+
+                const isHit = hits.has(n);
+                const isAnc = ancs.has(n) && !isHit;   // 결과이면서 상위인 경우는 결과로 표시
+                const visible = isHit || ancs.has(n) || underHit;
+
+                n.box.classList.toggle('hit', isHit);
+                n.box.classList.toggle('anc', isAnc);
+                n.box.classList.toggle('hide', !visible);
+                renderNode(n, isHit ? raw : '');
+
+                // 결과로 가는 길은 열어준다
+                if (!n.box.classList.contains('leaf') && (ancs.has(n) || isHit)) {
+                    n.box.classList.add('open');
+                }
+
+                // 예시 내용에서 일치했다면 예시도 펼친다
+                if (n.egBtn) {
+                    const egMatch = isHit && norm(n.eg).toLowerCase().indexOf(nq) >= 0;
+                    setEg(n, egMatch);
+                }
+            });
+
+            document.body.classList.add('searching');
+            document.body.classList.toggle('no-result', hits.size === 0);
+        }
+
+        qInput.addEventListener('input', applySearch);
+        document.getElementById('clearQ').addEventListener('click', () => {
+            qInput.value = '';
+            applySearch();
+            qInput.focus();
+        });
+
+        /* ------------------------------------------------------------ */
+        /* 툴바 버튼                                                      */
+        /* ------------------------------------------------------------ */
+        function resetSearch() {
+            if (qInput.value !== '') {
+                qInput.value = '';
+                applySearch();
+            }
+        }
+
+        document.getElementById('openAll').addEventListener('click', () => { resetSearch(); setAll(true); });
+        document.getElementById('closeAll').addEventListener('click', () => { resetSearch(); setAll(false); });
+
+        const levels = document.getElementById('levels');
+        for (let i = 1; i <= maxDepth; i++) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = i;
+            b.addEventListener('click', () => { resetSearch(); showLevel(i); });
+            levels.append(b);
+        }
+
+        // 기본값: 전체 닫힘 (.open / .eg-open 클래스가 없으면 닫힌 상태)
     </script>
 </body>
+
 </html>
